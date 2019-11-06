@@ -1,0 +1,296 @@
+Embedded Metastore :::has a single service and a single jvm that can not work with multiple nodes  at a time.
+sudo rm -r 
+set ::: is used to change the configuration at runtime.
+java.sql.Timestamp
+tinyintbyte
+hive.metastore.uris ==>it used to specify  the URI of a metastore server
+hive.metastore.uris
+hive.metastore.warehouse.dir
+set hive.mapred.mode=strict;  :::it prevent the executing a query without any partitioning filter query;
+---
+show partitions tablename;
+show partitions tablename partition(country = 'us');;
+show partitions tablename partition(columnname='us',state = 'Dc')
+
+if table is not partition  show partition command shows an error message..
+
+alter table table_name add[if not exists] partition columnname=value,columnname=value;
+renaming partitions::
+alter table table_name partition partition_col rename to partition partition_col; :::
+alter table table_name exchage partition partition_col with table table_name;
+
+ALTER TABLE table1 EXCHANGE PARTITION (ct='1') WITH TABLE table2;
+This command moves the data from table2 to table1@ct=1. If table@ct=1 is already exists or the
+schema of table1 and table2 is different, then this operation will be failed;;
+
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+
+set hive.enforce.bucketing=true;
+
+=========================
+alter table table_name set TBLPROPERTIES table_properties;
+
+alter table table_name set tblproperties('comment'='This is  a new comment');
+
+view :::  it is virtual table that acts as a window to the data for the underlying table commenly known as basetable;
+
+show tables;    show tables in hive_learning,
+show tables 'Hive*';
+show partitions tablename
+show tblproperties tablename
+show creata table dbname.tablename|view_name;
+show functions
+chatper -5:
+-----------
+HIVE Data Manipulation Language::
+--------------------------------------------
+load data inpath 'file path' [overwrite] into table tablename partition(partcol1=col1value,........).
+insert into table tablename partition(parcol1=val1,partcol2=val2,......) select _statement from from_statement;
+
+insert overwrite table tablename partition(parcol1=val1,parcol2=val2,....) select _statement;
+
+insert overwrite table tablename1 partition(root_partition_name='value',child_partition_name)
+root_partition_name::: this is static partition colunn.
+child_partition_name:::This dynamic partition column 
+--------
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+--------
+writing data into directory with query::
+------------------------------
+Standard syntax:
+INSERT OVERWRITE [LOCAL] DIRECTORY directory1 [ROW FORMAT row_format] [STORED AS
+file_format]SELECT select_statment FROM from_statment.
+Hive extension (multiple inserts):
+FROM from_statement
+INSERT OVERWRITE [LOCAL] DIRECTORY directory1 select_statement1
+[INSERT OVERWRITE [LOCAL] DIRECTORY directory2 select_statement2]
+eg##
+insert overwrite local directory '/sales'  select column1,2,3,4 from tablename;
+--------------------------------
+questions::
+============
+what happend if partition or bucketing column have the null values.
+rules for updates in hive::
+-------------------------------
+Rows that match the WHERE clause/criteria will be updated
+Partitioning columns cannot be updated
+Bucketing columns cannot be updated
+Update is not possible on tables that are created using the SORTED BY clause
+-----------------
+chapter-6 Hive Extensibility Features::
+----------------------------------------------
+create index index_name on table tablename(colname) as 'org.apache.hadoop.hive.ql.index.compact.CompactIndexHandler' WITH DEFERRED
+REBUILD;
+row_number() over( order by colname)
+rank() over ( order by colname)
+rank() over( partition by colanme order by colname ) as ;
+dense_rank() over ( partition by colname order by colname )
+ntile(4) over ( order by id desc ) as quartile
+percent_rank() over( partition by colname order by colname) as ;;
+-----------
+windowing in hive::
+-----------------------
+LEAD(column, offset, default) OVER( window_spec)LAG(column, offset, default) OVER( window_spec)
+The default value of offset is 1. Offset is the relative position of the row to be accessed. If there is no row next/prior to access the LEAD/LAG function returns NULL, You can change this NULL value by specifying the “default” values.
+
+For example;
+
+Get the insured amount of the patient later and prior than the current rows in each department. Query and output as follows:
+
+select pat_id, 
+dept_id, 
+ins_amt, 
+lead(ins_amt,1,0) over (partition by dept_id order by dept_id asc ) as lead_ins_amt, 
+lag(ins_amt,1,0) over (partition by dept_id order by dept_id asc ) as lag_ins_amt 
+from patient;
+pat_id	dept_id	ins_amt	lead_ins_amt	lag_ins_amt
+6	111	90000	150000	0
+2	111	150000	50000	90000
+5	111	50000	100000	150000
+1	111	100000	0	50000
+4	222	250000	890000	0
+5	222	890000	150000	250000
+3	222	150000	0	890000
+7	333	110000	0	0
+8	444	10000	0	0
+
+============================
+LEAD
+The LEAD function is used to return the data from the next set of rows. If the number of rows is not
+specified, the default lead is of one row. Hive would return NULL if the lead exceeds the current window:
+SELECT fname,pid, LEAD(pid) OVER (PARTITION BY ip ORDER BY ip)
+FROM sales;
+LAG
+The LAG function is used to return the data from the previous set of rows. If the number of rows is not
+specified, the default lag is of one row. Hive would return NULL if the lag for the current row is exceeds
+before the beginning of the window:
+SELECT fname,pid, LAG(pid) OVER (PARTITION BY ip ORDER BY ip)
+FROM sales;
+----------------------
+NOTE:::Contrary to the definition of LEAD and LAG provided in the Hive wiki, LEAD and LAG do not work with the
+windowing clause.
+FIRST_VALUE
+This function returns the value from the first row in the window:
+select fname, ip, first_value(pid) over (partition by ip order by fname) as pid
+from sales;
+LAST_VALUE
+This function returns the value from the last row in the window. The value is then applied to every row in
+that group. It would return NULL if the input expression is NULL:
+select fname, ip, last_value(pid) over (partition by ip order by fname) as pid from
+sales;
+------------------
+FILE FORMATS::
+
+
+
+joins:
+----------
+left/right/full outer join
+left semi join
+cross join
+map-side join
+bucket map  join
+bucket sort merge mao join
+skew join
+
+
+map-side join::
+-----------------
+set hive.auto.convert.join=true;
+
+--------------
+bucket map join;;;
+---------------------
+set hive.optimize.bucketmapjoin = true;
+--------------
+set hive.enforce.sorting =true
+
+
+Note
+If data in the buckets is not sorted then there is a possibility that a wrong result or output is generated as
+Hive does not check whether the buckets are sorted or not.
+The following parameters need to be set for:
+set hive.input.format = org.apache.hadoop.hive.ql.io.BucketizedHiveInputFormat;
+set hive.optimize.bucketmapjoin = true;
+set hive.optimize.bucketmapjoin.sortedmerge = true;
+The general syntax for a bucket map join is as follows:
+SELECT /*+ MAPJOIN(table2) */ column1, column2, column3…
+FROM table1 [alias_name1] JOIN table2 [alias_name2]
+ON table1 [alias_name1].key = table2 [alias_name2].key
+Where:
+table1: Is the bigger or larger table
+table2: Is the smaller table
+[alias_name1]: Is the alias name for table1
+[alias_name2]: Is the alias name for table2
+-----------------
+set
+hive.optimize.skewjoin=true;
+set hive.skewjoin.key=100000;
+---------
+charpter -8 statistics in hive
+-----------------------------------
+predicate pushdow---
+------------
+set hive.optimize.ppd=true;
+
+The following parameters can be set to reduce number of mappers for a MapReduce job:
+set hive.merge.mapfiles=true;
+The property hive.merge.mapfiles if set to true, will merge all the small files once the map job is
+completed:
+
+Suppose that there is a text file of size 10,000 bytes. If you want to limit the number of mappers, then you
+can set the earlier-mentioned parameters, as follows
+mapreduce.input.fileinputformat.split.maxsize=10000;
+mapreduce.input.fileinputformat.split.minsize=10000;
+
+mapred.max.split.size
+mapred.min.split.size
+
+There is going to be one mapper for the MapReduce job if the parameter size is set to 10,000, as in the
+preceding screenshot.
+However, there are going to be two mappers if the properties are set as shown in the following
+screenshot:
+
+mapreduce.input.fileinputformat.split.maxsize=5000;
+mapreduce.input.fileinputformat.split.minsize=5000;
+
+----------------------------------------------
+hive --define foo=bar
+hive> set foo;
+foo=bar;
+hive> set hivevar:foo;
+hivevar:foo=bar;
+hive> set hivevar:foo=bar2;
+hive> set foo;
+foo=bar2
+
+create table toss1(i int, ${hivevar:foo} string);
+hive> describe toss1;
+i int
+bar2 string
+hive> create table toss2(i2 int, ${foo} string);
+hive> describe toss2;
+i2 int
+bar2 string
+hive> drop table toss1;
+-----------------------------
+fields terminated by
+collection items terminated by ' '
+map keys terminated by ' '
+lines terminated by  ' '
+stored as fileformat;
+TBLPROPERTIES('creator'='me',...)
+location '/dnfkdfk/';
+----
+set hive.cli.print.current.db=true;
+set hive.cli.print.header=true;
+describe extended dbname.tablename;
+--------------------------
+CREATE EXTERNAL TABLE IF NOT EXISTS mydb.employees3
+LIKE mydb.employees
+LOCATION '/path/to/data';
+--------------------
+ALTER TABLE log_messages PARTITION(year = 2011, month = 12, day = 2)
+SET LOCATION 's3n://ourbucket/logs/2011/01/02';
+--------------------
+ALTER TABLE log_messages ADD IF NOT EXISTS
+PARTITION (year = 2011, month = 1, day = 1) LOCATION '/logs/2011/01/01'
+PARTITION (year = 2011, month = 1, day = 2) LOCATION '/logs/2011/01/02'
+PARTITION (year = 2011, month = 1, day = 3) LOCATION '/logs/2011/01/03'
+------
+--------------------------------------
+You can rename a column, change its position, type, or comment:
+ALTER TABLE log_messages
+CHANGE COLUMN hms hours_minutes_seconds INT
+COMMENT 'The hours, minutes, and seconds part of the timestamp'
+AFTER severity;
+-------------------------------------------
+INSERT OVERWRITE TABLE employees
+PARTITION (country, state)
+SELECT ..., se.cnty, se.st
+FROM staged_employees se;
+----------------------------
+INSERT OVERWRITE TABLE employees
+PARTITION (country = 'US', state)
+SELECT ..., se.cnty, se.st
+FROM staged_employees se
+WHERE se.cnty = 'US';
+--------------------
+You can usually improve the performance of aggregation by setting the following property
+to true, hive.map.aggr, as shown here:
+hive> SET hive.map.aggr=true;
+hive> SELECT count(*), avg(salary) FROM employees;
+--------------------------------------
+CREATE VIEW orders(state, city, part) AS
+SELECT cols["state"], cols["city"], cols["part"]
+FROM dynamictable
+WHERE cols["type"] = "request";
+A second view is created named shipments. This view returns the time and part column
+from rows where the type is response:
+CREATE VIEW shipments(time, part) AS
+SELECT cols["time"], cols["parts"]
+FROM dynamictable
+WHERE cols["type"] = "response";
+---------------------------------------------

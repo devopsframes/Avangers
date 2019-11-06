@@ -1,0 +1,131 @@
+1) USE THE tez::
+-------------------
+ HIVE can use the Apache Tez execution engine instead of MAPREDUCE engine.
+
+set hive.execution.engine.tez=true;
+-----------------------------------------------------------
+2) stored as orc file::
+------------------------
+ ORC stands for Optimized Row Columnar which means it can store data in an optimized way than the other file formats. ORC reduces the size of the original data up to 75%. As a result the speed of data processing also increases. ORC shows better performance than Text, Sequence and RC file formats.
+An ORC file contains rows data in groups called as Stripes along with a file footer. ORC format improves the performance when Hive is processing the data.
+-----------------------------------------------------------
+3)use vectorization ::
+it possible only for orc file formats;
+this  execution improve the performance of operations like scans,aggression,filters and joins by performing them in batches of 1024 rows ata once instead of single row each time.
+-----------------------------------------------------------
+4) parallel execution ::
+set the property to run parallel the different stages
+set hive.exec.parallel=true;
+-----------------------------------------------------------
+5)Multi table inserts::
+----------
+with the help of this,it reads entire big table only once and load it into multiple  tables.
+here no need to read the table multiple times for individual table inserts.
+-------------------------------------------------------------
+6) partitioning table
+------------------------
+When any user wants data contained within a table to be split across multiple sections in hive table, use of partition is suggested.
+The entries for the various columns of dataset are segregated and stored in their respective partition. When we write the query to fetch the values from table , only the required partitions of the table are queried, which reduces the time taken by query to yield the result.
+-----------------------------------------------------------
+7) bucketing:
+--------------------
+We came to know that Partition helps in increasing the efficiency when performing a query on a table. Instead of scanning the whole table, it will only scan for the partitioned set and does not scan or operate on the un-partitioned sets, which helps us to provide results in lesser time and the details will be displayed very quickly because of Hive Partition.
+Now, let’s assume a condition that there is a huge dataset. At times, even after partitioning on a particular field or fields, the partitioned file size doesn’t match with the actual expectation and remains huge and we want to manage the partition results into different parts. To overcome this problem of partitioning, Hive provides Bucketing concept, which allows user to divide table data sets into more manageable parts.
+Thus, Bucketing helps user to maintain parts that are more manageable and user can set the size of the manageable parts or Buckets too.
+Bucketing Features in Hive
+Hive partition divides table into number of partitions and these partitions can be further subdivided into more manageable parts known as Buckets or Clusters. The Bucketing concept is based on Hash function, which depends on the type of the bucketing column. Records which are bucketed by the same column will always be saved in the same bucket.
+Here, CLUSTERED BY clause is used to divide the table into buckets.
+----------------------
+8)Cost based Optimization::
+----------------------------------
+Hive optimizes each query’s logical and physical execution plan before submitting for final execution. These optimizations are not based on the cost of the query – that is, until now.
+A recent addition to Hive, CBO, performs further optimizations based on query cost, resulting in potentially different decisions: how to order joins, which type of join to perform, degree of parallelism and others.
+To use CBO, set the following parameters at the beginning of your query:
+
+set hive.cbo.enable=true;
+set hive.compute.query.using.stats=true;
+set hive.stats.fetch.column.stats=true;
+set hive.stats.fetch.partition.stats=true;
+-----------------------------------------
+9) using indexing:
+--------------------
+Indexing will definitely help to increase your query performance, use of indexing will create a separate called index table which acts as a reference for the original table.
+In a Hive table, there are many numbers of rows and columns. If we want to perform queries only on some columns without indexing, it will take large amount of time because queries will be executed on all the columns present in the table.
+The major advantage of using indexing is; whenever we perform a query on a table that has an index, there is no need for the query to scan all the rows in the table. Further, it checks the index first and then goes to the particular column and performs the operation.
+So if we maintain indexes, it will be easier for Hive query to look into the indexes first and then perform the needed operations within less amount of time.
+Eventually, time is the only factor that everyone focuses on.
+You can refer this blog to know how to implement indexing
+We hope this blog helped you in understanding how to optimize your hive queries for faster execution. Keep visiting
+ 
+---------------------------------------------------
+hive join optimizations:
+------------------------------------------
+1)Bucket Map Join
+set hive.optimize.bucketmapjoin=true;
+
+accepted
+As you bucketed the data by the join keys, you could use the Bucket Map Join. For that the amount of buckets in one table must be a multiple of the amount of buckets in the other table. It can be activated by executing set hive.optimize.bucketmapjoin=true; before the query. If the tables don't meet the conditions, Hive will simply perform the normal Inner Join.
+
+If both tables have the same amount of buckets and the data is sorted by the bucket keys, Hive can perform the faster Sort-Merge Join. To activate it, you have to execute the following commands:
+
+set hive.input.format=org.apache.hadoop.hive.ql.io.BucketizedHiveInputFormat;
+set hive.optimize.bucketmapjoin=true;
+set hive.optimize.bucketmapjoin.sortedmerge=true;
+
+------
+2)What is Map Side Join in Hive?
+---------------------------------------
+Also known as replicated join, a map-side join is a special type of join where a smaller table is loaded in memory and join is performed in map phase of MapReduce job. Since there is no reducer involved in the map-side join, it is much faster when compared to regular join.
+An important point to note is, one table must be small enough to fit into memory. It is recommended to have a proper configuration so that Hive automatically attempt to convert Joins into the map-side join. Below is a Hive join operation which is not a map-side join.
+
+In the image above, note the highlighted part. You can see that “number of reducer” is 1 which slows down the join operation.
+Now, to perform map-side join, set few configurations either into hive-site.xml OR directly from Hive shell. Below are the configurations which I have set from Hive shell.
+-----------
+hive> set hive.auto.convert.join=true;
+hive>set hive.auto.convert.join.noconditionaltask=true;
+--
+Once you are done with the configuration, execute the same join operation as we performed above.
+
+Note the highlighted part again! You will find that there is no reducer phase performed in this join operation. Hence, the map-side join is faster than regular join operation.
+--------------------------------
+3)What is Sort-Merge-Bucket (SMB) Map Join in Hive?
+--------------------------
+It is another Hive join optimization technique where all the tables need to be bucketed and sorted. In this case joins are very efficient because they require a simple merge of the presorted tables.
+Let us create bucketed tables from our existing tables i.e.; emp and dept. Before creating bucketed table, you need to set below properties.
+
+hive> set hive.enforce.bucketing=true;
+hive> set hive.enforce.sorting=true;
+
+reate table buck_emp(
+    id int,
+    name string,
+    salary int)
+CLUSTERED BY (id)
+SORTED BY (id)
+INTO 4 BUCKETS;
+We need to use regular INSERT statement to insert into bucketed table.
+INSERT OVERWRITE TABLE buck_emp
+SELECT * FROM emp;
+
+create table buck_dept(
+id int,
+dept_name string)
+CLUSTERED BY (id)
+SORTED BY (id)
+INTO 4 BUCKETS;
+ INSERT OVERWRITE TABLE buck_dept
+SELECT * FROM dept;
+
+Now the stage is set to perform SMB Map Join to optimize Hive joining. Again, make some changes in properties to perform SMB Map join.
+
+hive>set hive.enforce.sortmergebucketmapjoin=false;
+hive>set hive.auto.convert.sortmerge.join=true;
+hive>set hive.optimize.bucketmapjoin = true;
+hive>set hive.optimize.bucketmapjoin.sortedmerge = true;
+hive>set hive.auto.convert.join=false;  // if we do not do this, automatically Map-Side Join will happen
+SELECT u.name,u.salary FROM buck_dept d  INNER JOIN buck_emp u ON d.id = u.id;
+
+check here____ www.acadgild.com
+-----------------------------------------
+FILE FORMATS IN HIVE::
+========================

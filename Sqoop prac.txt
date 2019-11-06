@@ -1,0 +1,925 @@
+                SQOOP
+                ====
+to see the sqoop current working version
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ echo $SQOOP_HOME
+/home/gopalkrishna/INSTALL/sqoop-1.4.6.bin__hadoop-2.0.4-alpha
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+to see the all commands available in sqoop
+-----------------------------------------------------------------------------------------------------------------------------------------------
+$sqoop help
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+SQOOP COMMANDS
+--------------
+
+TO CHECK MYSQL “DATABASES” , “TABLES”  & “TABLES DATA”   ---in this case mapper will not be performed(action) to get the results from rdbms
+
+to see the all databases available in given rdbms
+            
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop list-databases --connect jdbc:mysql://localhost:3306 --username root -password root 
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+to see the availavle tables in the given database
+
+--------------------------------------------------------------------------------------
+sqoop list-tables --connect jdbc:mysql://localhost/nag --username root --password root
+--------------------------------------------------------------------------------------
+
+eval
+----
+
+it is Evaluate given  SQL statement if given sql stmt is currect then display the results on console
+
+advantage of eval 
+------------------
+
+by using eval command u can see  the what type of data u going to import from rdbms table to  hdfs 
+
+eval + --query
+--------------
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+sqoop eval --connect jdbc:mysql://localhost/nag --username root -password root --query 'select *from emp limit 3'
+sqoop eval --connect jdbc:mysql://localhost:3306/gopaldb --username root --password root --query "select * from emp where esal > 25000"
+sqoop eval --connect jdbc:mysql://localhost/nag --username root -password root --query 'show databases'
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+we can perform any dml operaion through the sqoop commands
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+sqoop eval --connect jdbc:mysql://localhost/nag --username root -password root --query 'delete from emp where empno=1';
+sqoop eval --connect jdbc:mysql://localhost/nag --username root -password root --query 'update emp set ename='nag' where ename='nag';
+sqoop eval --connect jdbc:mysql://localhost/nag --username root -password root --query 'insert into emp values('nag');
+sqoop eval --connect jdbc:mysql://localhost/nag --username root -password root --query 'drop table emp'
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+ --OPTION-FILE
+----------------------------------------------------------------------------------------------------------------------------------------------
+                               
+it is the concept of writing group of sqoop commandes in file and save that file with some name and run that file through command propmt
+
+by using options file we can hide some information
+
+it is used for reusabilty
+
+--option-file path should be local directory. Don't use HDFS directory. 
+ --------------------------------------------------------------------------------------------------------------------------------------------- 
+U HAVE TO CREATE OPTION FILE THIS MANNER ONLY OTHER WISE GET ERROR
+
+filename:connection.details
+--------------------------
+import
+--connect
+jdbc:mysql://localhost/nag
+--username
+root
+--password
+root
+--table
+emp
+--target-dir
+/op5
+-------------------------------------------------
+ sqoop  --options-file /home/gopalkrishna/connection.details
+-----------------------------------------------------------------
+to hide the username and pass word in options file
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --options-file /home/gopalkrishna/mahi/connection.details --table emp1 --target-dir /op3
+-------------------------------------------------------------------------------------------------------------------------------------------
+     
+SQOOP IMPORT
+-----------              
+to import data from rdbs to hdfs path
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp --target-dir /ok1
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+note:in sqoop default parallel mappers are 4 then table data will be stored in hdfs as 4 mappers 
+_SUCCESS
+part-m-00000
+part-m-00001
+part-m-00002
+part-m-00003( in this part-m files table data will be stored in hdfs as random manner)
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+if we want to store all rdbms data into the single mapper in hdfs path
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp --target-dir /ok2 -m 1(--num-mappers)
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+ when we  importing rdbms  table doesnt have primary key there is problem beacuse there is no random access in between mappers then we get error to over come this problem then we need to set number of mappers as 1 
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp1 --target-dir /ok4
+during import: No primary key could be found for table emp1. Please specify one with --split-by or perform a sequential import with '-m 1'.
+NOTE(here emp1 table dont have primary key because of that there is no random access in between default 4 mappers in this case u should use
+--split-by or decrease the reducers as 1)
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp1 --target-dir /ok4 -m 1
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp --target-dir /ok8 /ok9 
+error because we cant store data into 2 hdfs paths at time
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+--fields-terminated-by
+----------------------------------------------------------------------------------------------------------------------------------------------
+note sqoop by default writes the data into hdfs as semicolon then we can overwrite that delimiter by using --fields-terminated-by 
+---------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp --target-dir /mahi2 --fields-terminated-by '\t'
+
+----------------------------------------------------------------------------------------------------------------------------------------------      
+
+WHERE
+------                              
+
+based on the condition if we want import particular recordes from rdbs table hdfs path then we can use where
+---------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp --target-dir /mahi7 --fields-terminated-by '\t' --where 'sal>700'
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp --target-dir /mahi9 --fields-terminated-by '\t' --where "sal>700 and deptno=30"
+(NOTE QUOTES CAN BE SINGLE OR DOUBLE)
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+COLUMNS
+-------
+
+to import particular columns data from source rdbms table into target hdfs path
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp --target-dir /nag9 --fields-terminated-by '\t' 
+--where "sal>700 and deptno=30" --columns ename,deptno
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+APPLAYING MATHEMATICAL EXPRESSIONS ON THE COLUMNS
+-----------------------------------------------------------------------------------------------------------------------------------------------                      
+
+commandes required
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+--QUERY 'SELECT STATMENT 'where$CONDITIONS ALONG WITH -M 1
+
+NOTE(IN THIS CASE U SHOLUD NOT USE --TABLE OPTION)
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root -password root --query 'select empno,sal+100 from emp where$CONDITIONS'  -m 1 --target-dir /az
+-----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root -password root --query 'select empno,sal+100 from emp  
+where sal>600 and deptno=30 and $CONDITIONS'  -m 1 --columns empno --target-dir /az6 --fields-terminated-by '\t'
+
+ sqoop import --connect jdbc:mysql://localhost/nag --username root -password root --query 'select empno,sal+100 from emp  
+where sal>600 and deptno=30 or $CONDITIONS'  -m 1 --columns empno --target-dir /az7 --fields-terminated-by '\t'
+note(instead of AND WHEN U KEEPING OR INFRONT OF $CONDITION THEN IT WILL NOT CHECK AND CONDITION IT WILL DISPALY ALL RECORDES WHAT RECORDES ARE EXICUTED BY SELECT STATMENT)
+------------------------------------------------------------------------------------------------------------------------------------------------                                
+SET OPERATORS
+---------------
+
+
+UNION --IT IS USED TO ELIMINATING DUPLICATE ROWS FROM GIVEN TABLES IN SELECT STATMENTS
+UNION ALL --IT WILL NOT ELIMINATE DUPLAICATE ROWS FROM GIVEN  TABLES IN SELECT STATMENTS
+
+UNION
+----- 
+-----------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --query 'select * from emp where$CONDITIONS
+union select * from emp1 where$CONDITIONS' --target-dir /az8 -m 1 --fields-terminated-by '\t'
+ sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --query 'select * from emp where $CONDITIONS
+union select * from emp1 where $CONDITIONS' --target-dir /bz -m 1 --fields-terminated-by '\t' --columns empno
+---------------------------------------------------------------------------------------------------------------------------------------------
+                                          
+UNION ALL
+---------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --query 'select * from emp where $CONDITIONS
+union all select * from emp1 where $CONDITIONS' --target-dir /az9 -m 1 --fields-terminated-by '\t'
+                                          
+-----------------------------------------------------------------------------------------------------------------------------------------------
+JOINS
+-------
+JOINS ARE USED TO RETRIVE DATA FROM MULTIPULE TABLES BASED ON THE COMMON COLUMN NAME WITH SAME DATA TYPE
+
+EQUI JOIN--INNNER JOIN
+LEFT OUTER JOIN
+RIGHT OUTER JOIN
+                                   
+
+ EQUI JOIN--INNNER JOIN
+ -----------------------
+---------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --query 'select * from emp e join emp1 d on(e.empno=d.empno) and $CONDITIONS' --m 1 --target-dir /j
+ ERROR tool.ImportTool: Imported Failed: Duplicate Column identifier specified: 'empno'
+ sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --query 'select e.empno,d.deptno from emp e join emp1 d
+ on(e.empno=d.empno) where $CONDITIONS' --m 1 --target-dir /j4
+---------------------------------------------------------------------------------------------------------------------------------------------- 
+                                   
+ join more then two tables
+---------------------------                 
+---------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --query 'select e.empno,d.deptno,f.ename from emp e join emp1 d
+ on(e.empno=d.empno) join emp3 f on(e.empno=f.empno) where $CONDITIONS' -m 1 --target-dir /j5
+---------------------------------------------------------------------------------------------------------------------------------------------- 
+                                   
+  LEFT OUTER JOIN
+------------------                                   
+---------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --query 'select e.empno,d.deptno,f.ename from emp e left outer join emp1 d
+ on(e.empno=d.empno)  left outer join emp3 f on(e.empno=f.empno) where $CONDITIONS' --m 1 --target-dir /j6
+----------------------------------------------------------------------------------------------------------------------------------------------- 
+                                               
+RIGHT OUTER JOIN
+------------------
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --query 'select e.empno,d.deptno,f.ename from emp e right outer join emp1 d
+ on(e.empno=d.empno)  right outer join emp3 f on(e.empno=f.empno) where $CONDITIONS' --m 1 --target-dir /j6
+-------------------------------------------------------------------------------------------------------------------------------------------------------------- 
+
+                                          
+GROUP BY 
+---------
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root  --query 'select deptno,sum(sal)from emp where $CONDITIONS group by deptno' --m 1 --target-dir /j8 
+note:in this case you should use group by class after $conditions otherwise it will give error
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ 
+SELECT STATMENT IN DOUBLE QUOTES
+--------------------------------                                       
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root  --query "select * from emp where \$CONDITIONS" -m 1 --target-dir /j9 
+note:in this we should use backslash(\)infront of $CONDITIONS otherwise it will give error)
+----------------------------------------------------------------------------------------------------------------------------------------------                                
+           
+APPEND
+-------           
+
+Append data to an existing direcory  in HDFS no need to create new dir
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connnect jdbc:mysql://localhost/nag --username root --password root  --table emp  --target-dir /k --append
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+ IMPORT ALL TABLES FROM RDbmS TO HDFS PAT
+
+IMPORT-ALL-TABLES
+-----------------
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import-all-tables --connect jdbc:mysql://localhost/nag --username root --password root  -m 1
+here u should mension -m1 and also u should not use --target-dir keyword here because all tables will not store one single hdfs direcory
+-----------------------------------------------------------------------------------------------------------------------------------------------           
+
+                        
+IMPORT-ALL-TABLES WITH --EXCLUDE-TABLES IN HDFS OR HIVE PATH
+------------------------------------------------------------
+  
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import-all-tables  --exclude-tables emp,emp1,emp3,avg  --connect jdbc:mysql://localhost/nag --username root -password root  -m 1 --targer-dir /et
+note:it is giveing error because all tables data will not be stored in specific hdfs path
+sqoop import-all-tables  --exclude-tables emp,emp1,emp3,avg  --connect jdbc:mysql://localhost/nag --username root -password root  -m 1 
+Skipping table: emp
+Skipping table: emp1
+Skipping table: emp3 ---reaming tables will be stored in root use direcory
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+TO HIVE PATH
+-------------
+
+inthis case source rdbms table will store in specified hive-warehouse dir path but we cant select imported table in hive prompt
+
+------------------------------------------------------------------------------------------------------------------------------------  
+sqoop import --connect jdbc:mysql://localhost/abc --username root --password root --table emp --warehouse-dir /user/hive/warehouse
+sqoop import --connect jdbc:mysql://localhost/abc --username root --password root --table emp --warehouse-dir /user/hive/warehouse/nag.db
+-------------------------------------------------------------------------------------------------------------------------------------
+
+--hive-import
+--------------
+in this we need not mension hive warehouse-dir automatical import rdbms table will store in default hivewarehouse path
+and we can select the imported table in hive prompt
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --hive-import --connect jdbc:mysql://localhost/abc --username root --password root --table emp2 
+----------------------------------------------------------------------------------------------------------------------------------------------- 
+ 
+--hive-import --hive-database
+------------------------------
+ 
+in this case source rdbms table will be stored specifed hive data base with schema as rdbms source table
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import  --hive-import --hive-database nag --connect jdbc:mysql://localhost/nag --username root -password root --table emp -m 1
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+import-all-tables
+-------------------
+
+it is used to import all tables from rdbms to hivewarehouth path but rdbms source tables schema will not be capied in hive prompt
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import-all-tables --connect jdbc:mysql://localhost/abc --username root --password root --warehouse-dir user/hive/warehouse
+---------------------------------------------------------------------------------------------------------------------------------------------
+ 
+import-all-tables  --hive-import --hive-database
+-------------------------------------------------
+
+in this case rdbms source tables will be stored in specified hive data base with all data with schema as name as source rdbms table schema
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import-all-tables  --hive-import --hive-database perfect --connect jdbc:mysql://localhost/nag --username root -password root  -m 1
+----------------------------------------------------------------------------------------------------------------------------------------------
+ 
+import-all-tables  --exclude-tables
+------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import-all-tables  --exclude-tables emp,emp1,emp3,avg,r,o  --connect jdbc:mysql://localhost/nag --username root -password root  --warehouse-dir /user/hive/warehouse/oops.db
+
+sqoop import-all-tables --hive-import --hive-datebase nag --exclude-tables emp,emp1,emp3,avg,r,o  --connect jdbc:mysql://localhost/nag --username root -password root 
+----------------------------------------------------------------------------------------------------------------------------------------------
+                              
+
+--boundary-query
+---------------- 
+
+for example theire is one source rdbms table which having r like from 1 to 1 lahk recordes when we dont want import all recoreds from source rdbms table to
+hdfs path.if we want to import specified range of recordes from source rdbms table to hive path then we can use --boundary-query option because
+in this option we can specify imported recoreds range like where needs to start import and where needs to import end then those recores only import from source
+rdbms table to specified hdfs path
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root -password root --table emp --boundary-query 'select 3,6 from emp'
+--target-dir /manju7
+NOTE:if u want to use --boundary-query exported table should be primary key and also u should mension in select statments primary key values only
+sqoop import --connect jdbc:mysql://localhost/nag --username root -password root --table emp --boundary-query 'select 3,6 from emp3'
+--target-dir /manju7 -m 1
+here emp3 table not having primary key then u have mension -m 1 and also that colum contain any duplicat values it egnore duplicates it works like union in sql)
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--split-by
+-----------
+
+--split-by is used to specify the column of the source rdbms  table is  used to generate splits for imports. it menans   which column will be used to create the split while importing the data from source rdbms tables into your cluster.
+
+
+Apache Sqoop will create splits based on the values present in the columns specified in the –split-by clause of the import command. If the –split-by clause is not specified, then the primary key of the table is used to create the splits while data import.
+
+mysql> select * from emp2;
++----+------+
+| id | name |
++----+------+
+| 10 | aa   |
+| 20 | bb   |
+| 30 | cc   |
+| 40 | dd   |
+| 50 | ee   |
+| 50 | ee   |
++----+------+
+
+---------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/abc --username root --password root --table emp2 --split-by id --target-dir /spli
+
+duplicate recoreds also will be stored in default on of mapper
+----------------------------------------------------------------------------------------------------------------------------------
+
+sqoop import --connect jdbc:mysql://localhost/abc --username root --password root --table emp2 --split-by id -m 5 --target-dir /spli
+
+data will be stored in five mappers
+
+mysql> select * from nul;
++------+-------+
+| sno  | ename |
++------+-------+
+| NULL | abc   |
+| NULL | c     |
+|    1 | c     |
+|    2 | c     |
+|    3 | c     |
+|    3 | c     |
+|    4 | c     |
++------+-------+
+
+sqoop import --connect jdbc:mysql://localhost/abc --username root --password root --table nul --split-by sno --target-dir /nagu1
+
+note inthis case null recoreds will not store into hdfs path
+
+TO INSERT NULL RECORDES ALSO
+
+ sqoop import --connect jdbc:mysql://localhost/abc --username root --password root --query 'select ifnull(sno,1),ename from nul where $CONDITIONS' --split-by sno -m 1 --target-dir /ok1
+
+
+ WHAT IS DIFFERENCE BETWEEN --WAREHOUSE-DIR AND --TARGET-DIR
+-------------------------------------------------------------
+
+if you are importing more than one tables then you need to specify the warehouse-dir not traget-dir , 
+BUT IF U WANT TO IMPORT SINGLE TABLE THEN --TARGER-DIR IS ENGOUGH
+
+
+IMPORTING THE DATA FROM RDBMS TO HDFS IN DIFFRENT FORMS
+--------------------------------------------------------
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root -password root --table emp --as-textfile --target-dir
+                                                                                              =============
+sqoop import --connect jdbc:mysql://localhost/nag --username root -password root --table emp --as-sequencefile --target-dir /rani
+                                                                                              =================  
+sqoop import --connect jdbc:mysql://localhost/nag --username root -password root --table emp --as-avrodatafile --target-dir /rani  
+sqoop import --connect jdbc:mysql://localhost/nag --username root -password root --table emp --as-parquetfile --target-dir /rani  
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------S
+                                    
+IMPORTING THE DATA WITH “COMPRESSION TECHNIQUES”
+-----------------------------------------------
+
+it will reduce the file size and also it speedup data transfer across the network                                         
+
+By default, when using the --compress parameter, output files
+will be compressed using the GZip codec, and all files will end up with a .gz extension
+You can choose any other codec using the --compression-codec parameter. The fol-
+lowing example uses the BZip2 codec instead of GZip (files on HDFS will end up having
+the .bz2 extension):
+
+--compression-codec GzipCodec
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp3 --split-by empno -m 1 --target-dir /ab 
+--compress
+or
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp3 --split-by empno -m 1 --target-dir /ab11  --compression-codec  GzipCodec
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp3 --split-by empno -m 1 --target-dir /ao1  --compression-codec org.apache.hadoop.io.compress.GzipCodec
+
+part-m-00000.gz --extension
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+--compression-codec BZip2Codec
+----------------------------
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp3nag --username root --password root --table emp3 --split-by empno -m 1 --target-dir /ao  --compression-codec org.apache.hadoop.io.compress.BZip2Codec
+part-m-00000.bz2-extension
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--compression-codec SnappyCodecc
+-------------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp3 --split-by empno -m 1 --target-dir /ab11  --compression-codec  SnappyCodec
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table emp3 --split-by empno -m 1 --target-dir /ab6  --compression-codec org.apache.hadoop.io.compress.SnappyCodec
+Table 2-2. Compression codecs
+Splittable --Not Splittable
+BZip2, LZO--  GZip, Snappy
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+--delete-target-dir
+------------------
+
+delete the target directory if already available in hdfs path
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/abc --username root --password root --table emp --target-dir /dou--delete-target-dir
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+  SQOOP-JOB
+-----------
+ It specifies parameters to identify and recall the saved job.
+                                      
+Sqoop metastore that allows you to save all sqoop parameters for later reuse AND
+easily run them anytime                             
+
+TO CREATE JOB
+-------------
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+sqoop job --create nag -- import --connect jdbc:mysql://localhost/nag --username root --password root --table emp --target-dir /aaa2 --APPEND
+NOTE: -- IMPORT (U HAVE TO MAINTAIN GAP)
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+TO SEE THE LIST OF JOBS
+-----------------------
+
+-----------------------
+sqoop job --list;
+-----------------------
+
+To See the Details about a Job
+--------------------------------
+
+-------------------------------
+sqoop job --show nag
+-----------------------------
+
+To Execute a Job       (after it will ask password for execution)
+-----------------
+
+------------------------------
+sqoop job --exec gopaljob;
+-------------------------------
+
+To Delete a Job
+--------------------------------
+
+--------------------------------
+Sqoop job --delete gopaljob
+---------------------------------
+                                                      
+to edit sqoop job
+-----------------
+
+steps
+---
+ls -a 
+cd .sqoop
+nano metastore.db.script
+in this file we can modify min insrt or max insert value
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+what are the differnce between append and incremenatl append
+---------------------------------------------------------------
+
+incremental append
+--------------------
+it is used to import only newly inserted recoreds than some priviously imported set of recoreds to hdfs 
+
+append
+---------
+Append command used to  append records old the old directory, there is no need to over right or create a new directory it will appended to old directory
+
+
+
+hat is why incremental append asks for a parameter (last-modified or append). Choosing last-modified would add only updated records and choosing append would add all 
+newly added records
+
+
+INCREMENTAL MODE
+ -----------------
+ 
+incremental append
+------------------
+
+it is used to import only newly inseted recoreds than some priviously imported set of recoreds to hdfs 
+
+--check-column
+-------------
+check-column argument specifies which column needs to be checked during the import operation. The column can not be *CHAR type, like VARCHAR2 or CHAR. 
+
+ sqoop job --create job1 -- import --connect jdbc:mysql://localhost/nag --username root --password root --table st --target-dir /job1 --incremental append --check-column empno --last-value 0
+------
+sqoop job --exec job1
+now job1 path having six rec
+mysql> select * from st;
++-------+---------+---------------------+
+| empno | ename   | hdate               |
++-------+---------+---------------------+
+|     1 | nag     | 2018-02-12 01:13:06 |
+|     2 | mahesh  | 2018-02-12 03:20:02 |
+|     3 | malli   | 2018-02-12 01:13:25 |
+|     4 | eswar   | 2018-02-12 03:56:34 |
+|     5 | konda   | 2018-02-12 03:55:52 |
+|     6 | kasturi | 2018-02-12 04:21:45 |
++-------+---------+---------------------+
+after insert one rec into rdbms table
+insert into st(ename,empno)values(7,'nagendra')
+insert into st(ename,empno)values(8,'sai')
+----------------------------------------
+i want to without insert privous inserted rec only insert newly insert recoreds into /job1 path;
+sqoop job --exec job1
+ now job1 path having 8 rec
+beacuse only new inserted recoreds inserted into /job1 path 
+
+gopalkrishna@ubuntu:~$ sqoop job --create kondaa -- import --connect jdbc:mysql://localhost/abc --username root --password root --table ip --target-dir /great --incremental append --check-column ename --last-value 'uma'
+
+job will be create but will get runtime error
+
+18/03/31 21:30:14 ERROR tool.ImportTool: Error during import: Character column (ename) can not be used to determine which rows to incrementally import.
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+IT WILL IMPORT ONLY NEWLY INSERTED RECOREDS BUT IT WILL NOT IMPORT  NEWLY UPDATED RECOREDS
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+incremental lastmodified
+------------------------
+
+“lastmodified,” works on time-stamped data.
+use this when rows of the source table may be updated 
+
+mysql> select * from ip;
++------+---------+---------------------+
+| emmo | ename   | hdate               |
++------+---------+---------------------+
+|    1 | uma     | 2018-03-31 21:18:54 |
+|    2 | naga    | 2018-03-31 21:09:45 |
+|    3 | konda   | 2018-03-31 20:58:29 |
+|    4 | malli   | 2018-03-31 20:58:41 |
+|    5 | kasturi | 2018-03-31 21:09:13 |
+|    7 | hema    | 2018-03-31 21:19:48 |
++------+---------+----------------------
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+gopalkrishna@ubuntu:~$ sqoop job --create rani -- import --connect jdbc:mysql://localhost/abc --username root --password root --table ip --append --incremental lastmodified --check-column hdate --last-value '2018-03-31 21:18:54' --target-dir /sex
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+gopalkrishna@ubuntu:~$ sqoop job --exec rani
+
+THEN ABOVE RECOREDS WILL BE STORED IN DEAULT 4 MAPPER
+-----------------------------------------------------
+
+LATER SOME CHANGES HAPPENDED IN SOURCE RDBMS TABLE
+---------------------------------------------------
+
+mysql> update ip set ename='mahi' where ename='uma';
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> insert into ip(emmo,ename)values(6,'varma');
+Query OK, 1 row affected (0.00 sec)
+
+sqoop job --exec rani
+
+OLD RECORED,UPDATED RECORED,NEWLY INSERTED RECORED ALL AVILABLE IN PART-M FILES
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+BUT OLD DATA SHOULD NOT AVAILABLE THEN UPDATED RECOREDS AND NEWLY INSERTED RECORDES SHOULD BE AVAILBLE(EVEN SOURCE TABLE DOENT HAVE TIMESTAMP COLUMN) 
+
+mysql> select * from st;
++-------+--------+---------------------+
+| empno | ename  | hdate               |
++-------+--------+---------------------+
+|     1 | nag    | 2018-02-12 01:13:06 |
+|     2 | mahesh | 2018-02-12 03:20:02 |
+|     3 | malli  | 2018-02-12 01:13:25 |
+|     4 | ewar   | 2018-02-12 03:19:13 |
++-------+--------+---------------------+
+import above table to hdfs path
+------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table st --target-dir /s0
+
+LATER SOME RECORDES UPDATED AND SOME RECORDES UPDATED IN SOURCE RDBMS TABLE THOSE MODIFICATION NEEDS RO UPDATED IN HDFS PATH
+----------------------------------------------------
+
+insert into st(empno,ename)values(5,konda);
+mysql> insert into st(empno,ename)values(5,'konda');
+Query OK, 1 row affected (0.01 sec)
+
+mysql> update st set ename='eswar' where empno=4;
+Query OK, 1 row affected (0.00 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> select * from st;
++-------+--------+---------------------+
+| empno | ename  | hdate               |
++-------+--------+---------------------+
+|     1 | nag    | 2018-02-12 01:13:06 |
+|     2 | mahesh | 2018-02-12 03:20:02 |
+|     3 | malli  | 2018-02-12 01:13:25 |
+|     4 | eswar  | 2018-02-12 03:56:34 |
+|     5 | konda  | 2018-02-12 03:55:52 |
++-------+--------+---------------------+
+5 rows in set (0.00 sec)
+---------------------------------
+note: this modifications should be effected in privious hdfs path
+-----------------------------------------------------------------
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table st --target-dir /s00
+-----------------------------------------------------------------------------------------------------------
+u should merge aboue two hdfs path
+------------------------------------
+sqoop merge --merge-key empno --new-data /s00 --onto /s0 --target-dir /s000 ---class-name st(source table name) --jar-file //tmp/sqoop-gopalkrishna/compile/d704615d8031b4b72beb487318771bc3/st.jar(/soo jarfile)
+
+then u get /s000 path we will get modified re,and new inserted reds
+here leftouter join applied in both /s00 and /so path
+and give result in one part-m file
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+                    to-handle the null values in hdfs path
+                    -----------------------------------------
+mysql> select * from nul;
++-------+------+-------+
+| empno | comm | ename |
++-------+------+-------+
+|     2 |    3 | NULL  |
+|     3 | NULL | mahi  |
+|     5 | NULL | malli |
++-------+------+-------+
+
+--null-string and --null-non-string
+
+
+
+sqoop import --connect jdbc:mysql://localhost/nag --username root --password root --table nul --target-dir /n0 --null-non-string 0 --null-string 'no user' --lines-terminated-by ':' -m 1
+
+while importing table instead of null values by insert user defined values in hdfs or hive path 
+2,3,no user:3,0,mahi:5,0,malli:
+
+
+--null-string -any string and data column null replace by udv 
+--null-non-string --any numaric column null replaced by udv
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+                               direct
+                               ======
+You can improve the performance by giving --direct option in sqoop
+
+    --direct is only supported in mysql and postgresql.
+    Sqoop’s direct mode does not support imports of BLOB, CLOB, or LONGVARBINARY columns.
+
+sqoop  import --connect jdbc:mysql://localhost/nag --username root --password root --table emp3  --target-dir /anju6 -m 1 --direct
+
+https://sqoop.apache.org/docs/1.4.2/SqoopUserGuide.html
+https://www.tutorialspoint.com/sqoop/sqoop_job.htm
+                                                 EXPORT
+                                                 ========
+FROM HDFS PATH TO RBMS TABLE
+
+--------------------------------------------------------------------------------------------------------------------------------------------
+sqoop  export --connect jdbc:mysql://localhost/nag --username root --password root --table emp4  --export-dir /anju8
+sqoop  export --connect jdbc:mysql://localhost/nag --username root --password root --table emp4  --export-dir /anju8/part-m-00000--possible 
+(--TABLE EMP4 SHOULD BE IN RDMS WITH REQUIRED SCEHEMA)
+sqoop  export --connect jdbc:mysql://localhost/nag --username root --password root --table emp4  --export-dir /anju8/part-m-00000
+those recordes will be appended to the target rdbms table
+qoop  export --connect jdbc:mysql://localhost/nag --username root --password root --table emp4  --export-dir /anju8/part-m-00000 --fields-terminated-by '\t'
+
+----------------------------------------------------------------------------------------------------------------------------------------------
+                    
+UPDATE-KEY
+----------
+
+NOTE UPDATE-KEY COLUMN SHOULD BE PRIMARY AND UNIQUE CONSTRAINTS
+---------------------------------------------------------------
+
+INSERT mode – This is default mode to export. If you don’t specify anything in Sqoop export command this will be picked up by default. This mode is useful when you only inject the records into the table.
+
+UPDATE mode – In “update mode,” Sqoop generates UPDATE statements that replace existing records in the database. Legal values for mode include `updateonly` (default) and `allowinsert`.
+
+
+But, when I need to update already existing records I have to use --update-key 
+
+
+SECANARIO
+----------
+
+ALREADY DATA AVAILABLE IN RDBMS TARGET TABLE
+
+mysql> select * from emp1;
++----+------+
+| id | name |
++----+------+
+| 10 | a    |
+| 20 | bb   |
++----+------+
+2 rows in set (0.00 sec)
+
+NOTE IN HDFS EXPORT DIR PATH SOME RECORDES ARE UPDATED AND SOME RECOREDS ARE INSERTED THOSE MPDIFICATION SHOULD BE MODIFIED IN SOURCE RDBMS
+TABLE
+
+
+cat kl
+10,abc
+20,bb
+30,c
+40,nag
+gopalkrishna@ubuntu:~$ hadoop fs -mkdir /aim
+gopalkrishna@ubuntu:~$ hadoop fs -put kl /aim
+
+
+sqoop export --connect jdbc:mysql://localhost/abc --username root --password root --table emp1 \
+--export-dir /kl/kl --update-key id --update-mode allowinsert --verbose
+
+
+AFTER RAN THE SQOOP JOB
+
+mysql> select * from emp1;
++----+------+
+| id | name |
++----+------+
+| 10 | abc  |
+| 20 | bb   |
+| 30 | c    |
+| 40 | nag  |
+
+
+
+
+important interview question
+===================================
+
+Data types conversion issue:-  will have to be very careful when we import the data from RDBMS to hadoop system, you will notice default conversion happening and are not suitable to the business need . we can use  map-column-java/ map-column-hive function to handle this issue.
+
+
+ex
+====
+  mysql> select * from e;
++------+------+
+| id   | name |
++------+------+
+| 10   | aaa  |
+| 20   | bbb  |
+| 30   | ccc  |
+| 40   | ddd  |
++------+------+
+4 rows in set (0.00 sec)
+
+mysql> desc e;
++-------+-------------+------+-----+---------+-------+
+| Field | Type        | Null | Key | Default | Extra |
++-------+-------------+------+-----+---------+-------+
+| id    | varchar(10) | YES  |     | NULL    |       |
+| name  | varchar(10) | YES  |     | NULL    |       |
++-------+-------------+------+-----+---------+-------+
+2 rows in set (0.00 sec)
+
+
+gopalkrishna@ubuntu:~$ sqoop import --connect jdbc:mysql://localhost:3306/abc --table e --username root --password root --map-column-hive id=int --hive-import --create-hive-table --hive-database prudhvi -m 1
+
+
+hive> select * from e;
+OK
+10	aaa
+20	bbb
+30	ccc
+40	ddd
+Time taken: 0.756 seconds, Fetched: 4 row(s)
+hive> desc e;
+OK
+id                  	int                 	                    
+name                	string              	                    
+Time taken: 0.144 seconds, Fetched: 2 row(s)
+
+
+
+Important
+--------------
+
+sqoop import \
+  --connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+  --username retail_user \
+  --password itversity \
+  --table orders \
+  --warehouse-dir /user/dgadiraju/sqoop_import/retail_db \
+  --split-by order_status 
+
+
+(order_status  it is not a primary key column). so we get error. we can resolve this problem in below command
+
+
+sqoop import \
+  -Dorg.apache.sqoop.splitter.allow_text_splitter=true \
+  --connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+  --username retail_user \
+  --password itversity \
+  --table orders \
+  --warehouse-dir /user/dgadiraju/sqoop_import/retail_db \
+  --split-by order_status
+
+(order_status   it is not a primary key column but we can use -Dorg ... property , we won't get any error)
+
+
+->  -Dorg.apache.sqoop.splitter.allow_text_splitter=true  
+This property may use on --split-by <column name> (non-numeric columns in those it allows duplicate values) . so we can resolve this problem we may use that property. we don't get error.
+
+->  If you use --split-by <column name> (numeric columns which as primary key column) we can follow these restrictions, we don't wan to use above property.
+
+
+->If the primary key column or the column specified in split-by clause is non numeric type, then we need to use this additional argument 
+-Dorg.apache.sqoop.splitter.allow_text_splitter=true
+
+
+
+--autoreset-to-one-mapper
+==================================
+
+Import should use one mapper if a table has no primary key and no split-by column is provided. cannot be used with --Split-by <col> option is   
+(--autoreset-to-one-mapper)
+
+
+->    If a table does not have a primary key defined and the --split-by <col> is not provided, then import will fail unless the number of mappers is explicitly set to one with the --num-mappers 1 option or the --autoreset-to-one-mapper option is used. The option --autoreset-to-one-mapper is typically used with the import-all-tables tool to automatically handle tables without a primary key in a schema.
+
+
+sqoop import \
+ --connect jdbc:mysql://ms.itversity.com:3306/retail_db \
+ --username retail_user \
+ --password itversity \
+ --table order_items_nopk \
+ --warehouse-dir /user/dgadiraju/sqoop_import/retail_db \
+ --autoreset-to-one-mapper
+
+
+
+
+
+
+
+static partition using sqoop with hive warehouse ( we can't create dynamic partition using sqoop)
+========================================================================================================
+
+sqoop import --connect jdbc:mysql://localhost:3306/abc --username root --password root --hive-import --query "select id,sal from uemp where name = 'ccc' and \$CONDITIONS" --hive-partition-key name --hive-partition-value 'ccc' --split-by id --target-dir /aapp --hive-table VP1 --hive-database prudhvi -m 1
+
+
+
+
+

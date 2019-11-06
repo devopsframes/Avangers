@@ -1,0 +1,147 @@
+select deptno,avg(sal) from emp group by deptno;
+
+select empno,deptno,sal,avg(sal) over( partition by deptno order by deptno) avg_sal from empdup;
+
+select deptno,avg(sal) from emp group by deptno order by deptno;
+
+select empno,deptno,sal,avg(sal) over( partition by deptno order by deptno) avg_sal from empdup;
+
+ select empno,deptno,avg(sal) from emp group by deptno,empno; this gives the resutls on group by column base.====wrong output
+
+select avg(sal) from empdup;
+
+break on deptno skip 1 duplicates;
+This gives the one row space after duplicates;
+
+select empno,deptno,sal,avg(sal) over(partition by deptno) as avg_sal_deptno_sal from empdup;
+
+select empno,deptno,sal,avg(sal) over ()  as avg_sal from empdup;
+
+ select empno,deptno,sal,first_value(sal) over(partition by deptno) as first_sal from empdup;
+-------
+ select empno,deptno,sal,last_value(sal) over(partition by deptno) as last_sal from empdup;===>here data won't be sorted:::
+-------
+select empno,deptno,sal,last_value(sal) over(order by deptno) as last_sal from empdup;===> when we use the order by clause then it will be sorted.
+--------
+ select empno,deptno,sal,first_value(sal ignore nulls) over (partition by deptno order by sal asc nulls first) as test_data  from empdup;
+-------
+SELECT empno, deptno, sal, 
+       AVG(sal) OVER (PARTITION BY deptno ORDER BY sal
+                      RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS range_avg,
+       AVG(sal) OVER (PARTITION BY deptno ORDER BY sal
+                      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS rows_avg
+FROM   emp;
+------------
+select empno,deptno,sal,sum(sal) over(partition by deptno order by sal rows between 3 preceding and 3 following ) as range_sum from empdup;
+-----------
+ select empno,deptno,sal,sum(sal) over(partition by deptno order by sal range between 1 preceding and current row ) as range_sum from empdup;
+RANG will take the all duplicates into single entity::
+ROWS will take the all duplicates into a disticnt ::
+----------------
+clear breaks
+------
+ select empno,deptno,sal,first_value(sal) over( order by  sal rows between 1 preceding and current row) as ft ,last_value(sal) over( order by sal rows between current row and 1 following) as lt from empdup;
+--------------------------------------------------------------------------------------------------------------------------------------
+Lead
+
+The number of rows to lead can optionally be specified. If the number of rows to lead is not specified, the lead is one row.
+
+Returns null when the lead for the current row extends beyond the end of the window.
+
+Lag
+
+The number of rows to lag can optionally be specified. If the number of rows to lag is not specified, the lag is one row.
+
+Returns null when the lag for the current row extends before the beginning of the window.
+
+FIRST_VALUE
+
+LAST_VALUE
+
+The OVER clause
+
+OVER with standard aggregates:
+COUNT
+SUM
+MIN
+MAX
+AVG
+OVER with a PARTITION BY statement with one or more partitioning columns.
+
+OVER with PARTITION BY and ORDER BY with one or more partitioning and/or ordering columns.
+Analytics functions
+
+RANK
+ROW_NUMBER
+DENSE_RANK
+CUME_DIST
+PERCENT_RANK
+NTILE
+-------------------------------
+https://acadgild.com/blog/windowing-functions-in-hive
+=====================================================
+create table stocks (date_ String, Ticker String, Open Double, High Double, Low Double, Close Double, Volume_for_the_day int) row format delimited fields terminated by ',';
+------
+Lag
+This function returns the values of the previous row. You can specify an integer offset which designates the row position else it will take the default integer offset as 1.
+
+Here is the sample function for lag
+select ticker,date_,close,lag(close,1) over(partition by ticker) as yesterday_price from acadgild.stocks;
+
+Here using lag we can display the yesterday’s closing price of the ticker. Lag is to be used with over function, inside the over function you can use partition or order by classes.
+================================
+Lead
+This function returns the values from the following rows. You can specify an integer offset which designates the row position else it will take the default integer offset as 1.
+
+Here is the sample function for lead
+
+Now using the lead function, we will find that whether the following day’s closing price is higher or lesser than today’s and that can be done as follows.
+
+select ticker,date_,close,case(lead(close,1) over(partition by ticker)-close)>0 when true then "higher" when false then "lesser" end as Changes from acadgild.stocks
+
+select ticker,date_,volume_for_the_day,sum(volume_for_the_day) over(partition by ticker order by date_) as running_total from acadgild.stocks;
+
+------------------
+Finding the percentage of each row value
+Now let’s take a scenario where you need to find the percentage of the volume_for_the_day on the total volumes for that particular ticker and that can be done as follows.
+
+select ticker,date_,volume_for_the_day,(volume_for_the_day*100/(sum(volume_for_the_day) over(partition by ticker))) from acadgild.stocks;
+
+---------------------
+select ticker, min(close) over(partition by ticker) as minimum from acadgild.stocks
+select ticker, max(close) over(partition by ticker) as maximum from acadgild.stocks
+select ticker, avg(close) over(partition by ticker) as maximum from acadgild.stocks;
+select ticker,close,rank() over(partition by ticker order by close) as closing from acadgild.stocks
+select ticker,close,row_number() over(partition by ticker order by close) as num from acadgild.stocks
+select ticker,close,dense_rank() over(partition by ticker order by close) as closing from acadgild.stocks
+==========================
+Cume_dist
+It returns the cumulative distribution of a value. It results from 0 to 1. For suppose if the total number of records are 10 then for the 1st row the cume_dist will be 1/10 and for the second 2/10 and so on till 10/10.
+
+This cume_dist will be calculated in accordance with the result set returned by the over clause. The below query will result in the cumulative of each record for every ticker
+select ticker,cume_dist() over(partition by ticker order by close) as cummulative from acadgild.stocks
+=========
+Ntile
+It returns the bucket number of the particular value. For suppose if you say Ntile(5) then it will create 5 buckets based on the result set of the over clause after that it will place the first 20% of the records in the 1st bucket and so on till 5th bucket.
+
+The below query will create 5 buckets for every ticker and the first 20% records for every ticker will be in the 1st bucket and so on.
+
+select ticker,ntile(5) over(partition by ticker order by close ) as bucket from acadgild.stocks
+===================
+Percent_rank
+It returns the percentage rank of each row within the result set of over clause. Percent_rank is calculated in accordance with the rank of the row and the calculation is as follows (rank-1)/(total_rows_in_group – 1). If the result set has only one row then the percent_rank will be 0.
+
+The below query will calculate the percent_rank for every row in each partition and you can see the same in the below screen shot.
+
+select ticker,close,percent_rank() over(partition by ticker order by close) as closing from acadgild.stocks
+
+
+Ntile
+It returns the bucket number of the particular value. For suppose if you say Ntile(5) then it will create 5 buckets based on the result set of the over clause after that it will place the first 20% of the records in the 1st bucket and so on till 5th bucket.
+
+The below query will create 5 buckets for every ticker and the first 20% records for every ticker will be in the 1st bucket and so on.
+
+select ticker,ntile(5) over(partition by ticker order by close ) as bucket from acadgild.stocks
+In the below screenshot, you can see that 5 buckets will be created for every ticker and the least 20% closing prices will be in the first bucket and the next 20% will be in the second bucket and so on till 5th bucket for all the tickers.
+
+select ticker,close,percent_rank() over(partition by ticker order by close) as closing from acadgild.stocks;
