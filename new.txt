@@ -1,0 +1,273 @@
+2.write code to load data from dataframe to hive partitioned table? 
+3.Syntax of partitioning and bucketing and data loading into partitioned table? 
+4.what is DAG and how it works? 
+11.what is zookeeper and it's responsibilities? 
+12.What is the te interval of zookeeper? 
+14.how to copy a file from hdfs to local?
+16.what is CNN and another name of it? 
+17. How zookeeper knows that name node is down? 
+18. What is the size of the data you have sqooped? And number of records? 
+20.what are the window functions in scala and why do we use them? 
+21.what is replication is spark? 
+23.what is driver program in spark and what we write in it? 
+26.how to load data from sftp to hdfs write code.?
+
+5. Difference between RDD, Dataframe, Dataset?
+6. exec-core,exec-memory
+7. Spark submit
+
+Spark Data Processing - https://datasciencetalk.com/t/spark-data-processing/149
+Spark RDD Caching - https://datasciencetalk.com/t/spark-rdd-caching/148
+Spark Memory Management - https://datasciencetalk.com/t/spark-memory-management/147/2
+
+2)what is hive optimization techniques???????
+3)difference between Spark 1.x and Spark 2.x
+4)how to convert csv file into parquet file in spark and how do you save file in spark????
+
+Sqoop boundary conditions
+How to import Blob and Clob files
+Sqoop optimization
+How to remove duplicates ..all the possible ways to do it...
+
+Diff between map side join and SMB ..
+What is the delta table concept in Hive ??
+Explain ACID properties ..
+When to use Map reduce ? Have u written any ?? Give example ..
+What is the max no of mappers u can provide in sqoop ??
+What is salting and hotsppoting in Hbase?
+Group and cogroup..
+
+Diff between Tupple and Sets ?
+
+1. RDD, Dataframe vs Dataset
+10. Query to find distinct records
+11. Query to find duplicate records
+12. Query on Joins 
+13. 3rd highest salary for each year
+14. Employee name without salary
+
+How to deploy the jobs into production ?
+How do u debug production issues ?? What is the process u r following in ur project ??
+What r the different inputfile formats in Hadoop ??
+What r the advantage of yarn cluster mode over client mode in spark ??
+How to read data from one table and insert it into multiple tables in Hive?
+
+Explain Architecture of Spark
+What r the operationa in spark.
+Datasets , Data frame and RDDs
+
+In which file format schema changes r allowed ?
+
+1.How to set/ configure the the password in sqoop 
+2.what is the difference between like and are like?
+
+4. have you ever received an error "spaceout" in your datanode?
+A). Before reaching space out admins will perform horizontal scaling
+
+7. how do you achieve broadcast join automatically without out doing it manually? and how do you setup your driver program to detect where broadcast join can be good to use and how do you automate the process?
+A) —conf spark.sql.autobroadcastjointhreshold
+If data set is small automatically broadcast join will happen. 
+Driver program :- by passing shared variable rdd. Broadcast(rdd2)
+
+8. how do you acheive in memory caache?
+scenario : imagine you are working on cluster and already have cache your rdd and got the output stored in cache now i want to clear the memory space and use that space for caching another rdd? how to achieve this?
+A). Caching strategies (StorageLevel): RDD blocks can be cached in multiple stores (memory, disk, off-heap), in serialized or non-serialized format.
+MEMORY_ONLY: Data is cached in memory only in non-serialized format.
+MEMORY_AND_DISK: Data is cached in memory. If enough memory is not available, evicted blocks from memory are serialized to disk. This mode of operation is recommended when re-evaluation is expensive and memory resources are scarce.
+DISK_ONLY: Data is cached on disk only in serialized format.
+OFF_HEAP: Blocks are cached off-heap, e.g., on Alluxio [2].
+The caching strategies above can also use serialization to store the data in serialized format. Serialization increases the processing cost but reduces the memory footprint of large datasets. These variants append “_SER” suffix to the above schemes. E.g., MEMORY_ONLY_SER, MEMORY_AND_DISK_SER. DISK_ONLY and OFF_HEAP always write data in serialized format.
+Data can be also replicated to another node by appending “_2” suffix to the StorageLevel: e.g., MEMORY_ONLY_2, MEMORY_AND_DISK_SER_2. Replication is useful for speeding up recovery in the case one node of the cluster (or an executor) fails.
+Caching RDDs in Spark: It is one mechanism to speed up applications that access the same RDD multiple times. An RDD that is not cached, nor checkpointed, is re-evaluated again each time an action is invoked on that RDD. There are two function calls for caching an RDD: cache() and persist(level: StorageLevel). The difference among them is that cache() will cache the RDD into memory, whereas persist(level) can cache in memory, on disk, or off-heap memory according to the caching strategy specified by level.
+persist() without an argument is equivalent with cache(). We discuss caching strategies later in this post. Freeing up space from the Storage memory is performed by unpersist().
+When to use caching: As suggested in this post, it is recommended to use caching in the following situations:
+RDD re-use in iterative machine learning applications
+RDD re-use in standalone Spark applications
+When RDD computation is expensive, caching can help in reducing the cost of recovery in the case one executor fails
+
+9. what are the packages you have worked in scala name the package you have imported in your current project?
+10. what modules you have worked in scala and name the module which you have worked till date?
+11. Kafka - scenario : suppose your producer is producing more then your consumer can  consume , how will you deal such situation and what are your preventive measures to stop data loss?
+A). Through ack or by taking one more consumer
+12. how do you achieve " re-balancing in  Kafka and in what way it is use useful?
+A. In rebalancing process , partition assignment algorithm is executed and decides what partitions should be claimed and claims the partition ownership in Zookeeper again. If the claim was successful consumer starts fetching his new partitions. Whenever any consumer is added or leave , rebalancing of partitions happens.
+13. Kafka scenario : suppose producer is writing the data in CSV format and in structure data then how will the consumer will come to know what schema the data is coming in and how to specify and where to specify the schema?
+14. how do you manage you offsets?
+A).  For every offsets unique I'd will be there before 0.9 version zookeeper Is maintaining afterthat consumer will maintained
+15 . Kafka : scenario : suppose consumer a has read 10 offsets from the topics and it got failed then how consumer b will pick up offsets and how does it stores the data and what is the mechanism we need configure to achieve this.
+A.)	it will take time to msg I'll explain in class
+16. Hive : Scenario: Imagine we have 2 tables A and B.B is the master table and A is the table which receives the updates of certain information. so i want to update table B using the latest updated columns based up on the id how do we achieve that and what is the exact query we use?
+A) https://hortonworks.com/blog/four-step-strategy-incremental-updates-hive/
+Write one view for incremental update 
+And after creating view for reporting purpose create new table based on view by deleting old instance of the table
+17. What is use of Row-index and in which scenarios have you used it in hive?
+A.) Row indexing Is helpful for searching particular row in columns
+18. what do you know about Ntile.
+A.) The NTILE window function divides the rows for each window partition, as equally as possible, into a specified number of ranked groups. The NTILE window function requires the ORDER BY clause in the OVER clause. ... The RANK window function determines the rank of a value in a group of values.
+19. Spark - Scenario : Suppose i m running 10 sql jobs which generally take 10 mins to complete, but one it took 1 hour to complete if this is the case how to you report this error and how will you debug your code and provide a solution for this.
+A. We need to check in web interface which task is take time we need to find out any shuffling operation is there otherwise we need to check any skewness is there in data
+
+Sqoop password encryption
+Why we use sqoop when Hive is already being used
+How to add a new column in a existing table in Hive
+How to delete the DB directly which contains multiple tables in it .
+How u debug the production issues and wht process u r following in ur project when there is a production issue.
+What is SCD 1,2,3 ?
+How to remove duplicates in Hive ..tell Mee all the ways u know..
+Diff  splitby and boundary query in sqoop
+How u will load the data from remote machines to RDBMS ?
+
+Y data is loaded into the local after the mapper phase output..
+Incremental load ..how u do it...write the syntax ..
+How u can increase the block size in Hadoop
+Diff between Hadoop 1 and Hadoop 2 ....
+Wht was ur cluster size in project ?? 
+If updates r not advisable in Hive ..but u hv to do it..wt solution do u prefer ?
+Diff between map side join and SMB 
+Suppose there r 1000 tables and all has duplicates in them...req is to remove the duplicates ..how u ll do ..say how to automate it ? 
+How to import Blob and Clob files
+1) How can you perform CRUD operation in Hive.
+
+3) Do you know ORC file in Hive?
+4) What is different in Cloudera Hadoop then Apache Hadoop
+5) Components of Hadoop?
+6) What are Hive File Formating? Explain each.
+7) Can we perform CRUD operation on text File in HiVe?
+8) What is RPC connection? Do you remeber the PORT number you using?
+11) How hadoop can process a 1 GB File. Explain the flow and execution steps performed? 
+12) To process and perform operation on a 500 GB File, you have given 4 types of File sizes 64 MB, 128 MB, 512 MB etc... Which File size you should go with?
+10)how to decide various parameter values in spark-submit 
+11) difference between coalese and repartition
+12) difference between rdd dataframe and dataset. When to use one 13)what is dataskew and how to fix it?
+
+18) use of map, flatmap, mappartition, foreach, foreachPartition 
+19)what is pair rdd? When to use them?
+20) performance optimisation techniques in spark
+21) difference between cluster and client mode
+22)how to capture log in client mode and cluster mode
+
+24) What types of file format spark supports ? Which of them are most suitable for our organization need ? 25) Difference between reduceByKey()and group ByKey()
+26) difference between spark 1 and spark 2
+27) how do you debug spark jobs
+29) what size of file do you use for development?
+30) how long will take to run your script in production
+5 compresion techique in spark
+6. Difference b/w lzo and gzip
+12.what is map side in hive
+
+which ingestion tool did you use? 
+when you are ingesting the data, how do you make sure that, such files are ingested and data is accuracy?
+which API did you use in Spark? that is, RDD,DataFrame or Dataset? 
+If you use DataFrame, when You are loading the into DF, how DF processes the data, that is, complete flow of data in DataFrame.
+How to do you optimize the joins in SparkSQL?
+if you have data, then if 1 partiton have some data, and 1 partiton doesn't have the data, and other partiton have some data, then how do you organize?
+what is case class in Scala?
+what is comprehensive in Scala?
+
+4. have you ever received an error "spaceout" in your datanode?
+5. how do you allocate buffer memory to your datanode?
+6.how much buffer space have you allocated to your map task and reduce task in your datanode?
+7 how do you achieve broadcast join automatically without out doing it manually? and how do you setup your driver program to detect where broadcast join can be good to use and how do you automate the process?
+8. how do you acheive in memory caache?
+scenario : imagine you are working on cluster and already have cache your rdd and got the output stored in cache now i want to clear the memory space and use that space for caching another rdd? how to achieve this?
+9.what are the packages you have worked in scala name the package you have imported in your current project?
+10. what modules you have worked in scala and name the module which you have worked till date?
+11.Kafka - scenario : suppose your producer is producing more then your consumer can  consume , how will you deal such situation and what are your preventive measures to stop data loss?
+12. how do you achieve " re-balancing in  Kafka and in what way it is use useful?
+13. Kafka scenario : suppose producer is writing the data in CSV format and in structure data then how will the consumer will come to know what schema the data is coming in and how to specify and where to specify the schema?
+14. how do you manage you offsets?
+15 . Kafka : scenario : suppose consumer a has read 10 offsets from the topics and it got failed then how consumer b will pick up offsets and how does it stores the data and what is the mechanism we need configure to achieve this.
+16. Hive :  Scenario: Imagine we have 2 tables A and B.
+B is the master table and A is the table which receives the updates of certain information
+so i want to update table B using the latest updated columns based up on the id how do we achieve that and what is the exact query we use?
+17. What is use of Row-index and in which scenarios have you used it in hive?
+18. what do you know about Ntile.
+19. Spark - Scenario : Suppose i m running 10 sql jobs which generally take 10 mins to complete, but one it took 1 hour to complete if this is the case how to you report this error and how will you debug your code and provide a solution for this.
+16)What is catalyst Optimiser
+
+Hadoop-2.6.5
+Spark-2.2.1
+Scala-2.11.8
+Cloudera-5.12
+Hive-0.12
+Sqoop-1.4.6
+
+1) how do u import my SQL table if don't have primary key 
+2) how do u check update files in hdfs
+3)what is your cluster size
+4)how much data you are processing
+HCL - Hyd Interview Questions 
+1) Given an  array of elements, need to sort an array of elements, which sorting technique do you use? asked to write a program in java to sort the array.
+2)what is the difference between RDD and DataFrame?
+3)How to calculate the average of 5 salaries against to one ID without using any predefined method, Need to write a program in spark?
+4)which one do you prefer? Either GroupByKey  or ReduceByKey?
+5)what is split by in Sqoop?
+6)What is the difference between DAG and lineage?
+8)Write a query to find out third highest salary?
+
+12)Difference between ORC and Parquet?
+13)Once records coming to MySql Sqoop imports should happen automatically?What to do?
+14)Difference between LIMIT  and TOP?
+15)Draw Spark Sql background execution engine Architecture?
+I have a problem where I need to add a column in a dataframe with array list like [Z,Z,Z..N times]. I m using loop using withColumn to create this array, but runtime is huge.
+
+Difference between data frame and datasets 
+****
+We have a group of people arranged in males and females in equal numbers we have arrange them in alternative way like ...
+They are in random present in dataset but we have to arrange them in alternative way....
+**
+How can we arrange ....!!! 
+
+Suppose you have two files..... file a and file b 
+We need to perform multiple query's on two files 
+How to merge them and perform query's on that ? 
+
+Again if I perform multiple  query's on both files 
+How do you save the output of each query's in separate file ???
+ 
+***
+There is one aggregate query you need to implement in spark 
+Tell me best approach way to do ...!!
+Suppose I have launched a product I want to know sales for region wise ... How do you perform the aggregate function in best way 
+This query has lot of function that still prove in bulit fuctions are best way do ....?
+All over India 
+*†**
+
+1. Find second highest salary by using spark core components?
+2. Difference between driver memory vs executor memory vs shuffle memory?
+3 . Write a scala program to find out prime number or not?
+4. Write a scala program for word count?
+5. What is vectorization in hive & spark
+And SQL based scenarios.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
